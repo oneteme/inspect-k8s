@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inspect-server
+  labels:
+    app: inspect-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inspect-server
+  template:
+    metadata:
+      labels:
+        app: inspect-server
+    spec:
+      containers:
+      - image: oneteme/inspect-server:1.0
+        name: inspect-server
+        imagePullPolicy: Always
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 9000
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 9000
+--
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inspect-app
+  labels:
+    app: inspect-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inspect-app
+  template:
+    metadata:
+      labels:
+        app: inspect-app
+    spec:
+      containers:
+      - image: oneteme/inspect-app:1.0
+        name: inspect-app
+        imagePullPolicy: Always
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+--
+apiVersion: v1
+kind: Service
+metadata:
+  name: inspect-server
+  labels:
+    app: inspect-server
+spec:
+  selector:
+    app: inspect-server
+  ports:
+    - protocol: TCP
+      port: 9000
+      targetPort: 9000
+--
+apiVersion: v1
+kind: Service
+metadata:
+  name: inspect-app
+  labels:
+    app: inspect-app
+spec:
+  selector:
+    app: inspect-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+--
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: inspect
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: 'inspect.<YOUR_DOMAIN>'
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: inspect-app
+            port:
+              number: 80
+      - path: /backend
+        pathType: Prefix
+        backend:
+          service:
+            name: inspect-server
+            port:
+              number: 9000
