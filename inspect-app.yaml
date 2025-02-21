@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "${APP_NAME}"
+  labels:
+    app: "${APP_NAME}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "${APP_NAME}"
+  template:
+    metadata:
+      labels:
+        app: "${APP_NAME}"
+    spec:
+      containers:
+        - image: "${REGISTRY}oneteme/inspect-app:${APP_VERSION}"
+          name: "${APP_NAME}"
+          imagePullPolicy: Always
+          livenessProbe:
+            httpGet:
+              path: /
+              port: "${APP_PORT}"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: "${APP_PORT}"
+          env:
+            - name: INSPECT_SERVER_URL
+              value: "${INSPECT_SERVER_URL}"
+            - name: DEFAULT_ENV
+              value : "${ENV}"
+            - name: DEFAULT_GRID_VIEW_PERIOD
+              value: "${DEFAULT_GRID_VIEW_PERIOD}"
+            - name: DEFAULT_KPI_VIEW_PERIOD
+              value: "${DEFAULT_KPI_VIEW_PERIOD}"
+          resources:
+            requests:
+              cpu: "${APP_CPU_REQUEST}"
+              memory: "${APP_MEMORY_REQUEST}"
+            limits:
+              cpu: "${APP_CPU_LIMIT}"
+              memory: "${APP_MEMORY_LIMIT}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "${APP_NAME}"
+  labels:
+    app: "${APP_NAME}"
+spec:
+  selector:
+    app: "${APP_NAME}"
+  ports:
+    - protocol: TCP
+      port: "${APP_PORT}"
+      targetPort: "${APP_PORT}"
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: "${APP_NAME}"
+  labels:
+    app: "${APP_NAME}"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`${INSPECT_APP_INGRESS_DNS}`)
+      kind: Rule
+      services:
+        - name: "${APP_NAME}"
+          port: "${APP_PORT}"
+  tls: { }
