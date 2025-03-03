@@ -83,7 +83,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`${K8S_INSPECT_SERVER_INGRESS_DNS}`)
+    - match: Host(`${K8S_SERVER_INGRESS_DNS}`)
       kind: Rule
       services:
         - name: "${K8S_SERVER_NAME}"

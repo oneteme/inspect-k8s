@@ -1,34 +1,34 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: "${K8S_APP_NAME}"
+  name: "${K8S_WEBAPP_NAME}"
   labels:
-    app: "${K8S_APP_NAME}"
+    app: "${K8S_WEBAPP_NAME}"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: "${K8S_APP_NAME}"
+      app: "${K8S_WEBAPP_NAME}"
   template:
     metadata:
       labels:
-        app: "${K8S_APP_NAME}"
+        app: "${K8S_WEBAPP_NAME}"
     spec:
       containers:
-        - image: "${DOCKER_REGISTRY}oneteme/inspect-app:${DOCKER_APP_VERSION}"
-          name: "${K8S_APP_NAME}"
+        - image: "${DOCKER_REGISTRY}oneteme/inspect-app:${DOCKER_WEBAPP_VERSION}"
+          name: "${K8S_WEBAPP_NAME}"
           imagePullPolicy: Always
           livenessProbe:
             httpGet:
               path: /
-              port: "${K8S_APP_PORT}"
+              port: "${K8S_WEBAPP_PORT}"
           readinessProbe:
             httpGet:
               path: /
-              port: "${K8S_APP_PORT}"
+              port: "${K8S_WEBAPP_PORT}"
           env:
             - name: INSPECT_SERVER_URL
-              value: "${INSPECT_SERVER_URL}"
+              value: "${SERVER_URL}"
             - name: DEFAULT_ENV
               value : "${DEFAULT_ENV}"
             - name: DEFAULT_GRID_VIEW_PERIOD
@@ -37,39 +37,39 @@ spec:
               value: "${DEFAULT_KPI_VIEW_PERIOD}"
           resources:
             requests:
-              cpu: "${K8S_APP_CPU_REQUEST}"
-              memory: "${K8S_APP_MEMORY_REQUEST}"
+              cpu: "${K8S_WEBAPP_CPU_REQUEST}"
+              memory: "${K8S_WEBAPP_MEMORY_REQUEST}"
             limits:
-              cpu: "${K8S_APP_CPU_LIMIT}"
-              memory: "${K8S_APP_MEMORY_LIMIT}"
+              cpu: "${K8S_WEBAPP_CPU_LIMIT}"
+              memory: "${K8S_WEBAPP_MEMORY_LIMIT}"
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: "${K8S_APP_NAME}"
+  name: "${K8S_WEBAPP_NAME}"
   labels:
-    app: "${K8S_APP_NAME}"
+    app: "${K8S_WEBAPP_NAME}"
 spec:
   selector:
-    app: "${K8S_APP_NAME}"
+    app: "${K8S_WEBAPP_NAME}"
   ports:
     - protocol: TCP
-      port: "${K8S_APP_PORT}"
-      targetPort: "${K8S_APP_PORT}"
+      port: "${K8S_WEBAPP_PORT}"
+      targetPort: "${K8S_WEBAPP_PORT}"
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
-  name: "${K8S_APP_NAME}"
+  name: "${K8S_WEBAPP_NAME}"
   labels:
-    app: "${K8S_APP_NAME}"
+    app: "${K8S_WEBAPP_NAME}"
 spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`${K8S_INSPECT_APP_INGRESS_DNS}`)
+    - match: Host(`${K8S_WEBAPP_INGRESS_DNS}`)
       kind: Rule
       services:
-        - name: "${K8S_APP_NAME}"
-          port: "${K8S_APP_PORT}"
+        - name: "${K8S_WEBAPP_NAME}"
+          port: "${K8S_WEBAPP_PORT}"
   tls: { }
