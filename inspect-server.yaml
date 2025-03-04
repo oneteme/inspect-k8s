@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "${K8S_SERVER_NAME}"
+  labels:
+    app: "${K8S_SERVER_NAME}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "${K8S_SERVER_NAME}"
+  template:
+    metadata:
+      labels:
+        app: "${K8S_SERVER_NAME}"
+    spec:
+      containers:
+        - image: "${DOCKER_REGISTRY}oneteme/inspect-server:${DOCKER_SERVER_VERSION}"
+          name: "${K8S_SERVER_NAME}"
+          imagePullPolicy: Always
+          livenessProbe:
+            httpGet:
+              path: /actuator/info
+              port: "${K8S_SERVER_PORT}"
+          readinessProbe:
+            httpGet:
+              path: /actuator/info
+              port: "${K8S_SERVER_PORT}"
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value : "${SPRING_DATASOURCE_URL}"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "${SPRING_DATASOURCE_USERNAME}"
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: "${SPRING_DATASOURCE_PASSWORD}"
+            - name: INSPECT_ENABLED
+              value: "${INSPECT_ENABLED}"
+            - name: INSPECT_DISPATCH_DELAY
+              value: "${INSPECT_DISPATCH_DELAY}"
+            - name: INSPECT_DISPATCH_UNIT
+              value: "${INSPECT_DISPATCH_UNIT}"
+            - name: INSPECT_DISPATCH_BUFFER_MAX_SIZE
+              value: "${INSPECT_DISPATCH_BUFFER_MAX_SIZE}"
+            - name: INSPECT_TRACK_REST-SESSION_EXCLUDES_METHOD
+              value: "OPTIONS"
+            - name: INSPECT_TRACK_REST-SESSION_EXCLUDES_PATH
+              value: "/actuator/info, /favicon.ico" #
+            - name: INSPECT_PURGE_ENABLED
+              value: "${INSPECT_PURGE_ENABLED}"
+            - name: INSPECT_PURGE_SCHEDULE
+              value: "${INSPECT_PURGE_SCHEDULE}"
+            - name: INSPECT_PURGE_DEPTH
+              value: "${INSPECT_PURGE_DEPTH}"
+          resources:
+            requests:
+              cpu: "${K8S_SERVER_CPU_REQUEST}"
+              memory: "${K8S_SERVER_MEMORY_REQUEST}"
+            limits:
+              cpu: "${K8S_SERVER_CPU_LIMIT}"
+              memory: "${K8S_SERVER_MEMORY_LIMIT}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "${K8S_SERVER_NAME}"
+  labels:
+    app: "${K8S_SERVER_NAME}"
+spec:
+  selector:
+    app: "${K8S_SERVER_NAME}"
+  ports:
+    - protocol: TCP
+      port: "${K8S_SERVER_PORT}"
+      targetPort: "${K8S_SERVER_PORT}"
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: "${K8S_SERVER_NAME}"
+  labels:
+    app: "${K8S_SERVER_NAME}"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`${K8S_SERVER_INGRESS_DNS}`)
+      kind: Rule
+      services:
+        - name: "${K8S_SERVER_NAME}"
+          port: "${K8S_SERVER_PORT}"
+  tls: { }
